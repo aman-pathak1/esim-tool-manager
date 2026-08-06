@@ -74,11 +74,18 @@ def check_dependencies(tool_name: str) -> DependencyReport:
             if not _is_apt_package_installed(dep):
                 report.missing_dependencies.append(dep)
     else:
-        if entry.get(f"dependencies_{plat}"):
-            report.notes.append(
-                f"Automated dependency verification for '{plat}' is not implemented; "
-                f"please verify manually."
-            )
+        # Always disclose that verification wasn't attempted on this
+        # platform -- regardless of whether this specific tool happens
+        # to declare a 'dependencies_<plat>' list in the registry.
+        # Checking only when that key exists (the previous behaviour)
+        # meant every non-Linux platform silently reported a clean
+        # pass without ever actually checking anything, since no
+        # registry entry currently declares darwin/windows dependency
+        # lists. Caught by test_check_dependencies_non_linux_adds_note.
+        report.notes.append(
+            f"Automated dependency verification for '{plat}' is not implemented; "
+            f"please verify manually."
+        )
 
     if report.missing_dependencies:
         logger.warning(

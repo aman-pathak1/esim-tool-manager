@@ -30,7 +30,18 @@ def cmd_list(_args):
     print("-" * 70)
     for name, entry in registry.items():
         installed = user_cfg["installed_tools"].get(name)
-        ver = installed["version"] if installed else (get_installed_version(name) or "not installed")
+        # Always prefer a live check over the cached config -- the cache
+        # can go stale (e.g. it was written before a detection bug was
+        # fixed, or the tool was updated/removed outside this manager).
+        # Only fall back to the cached value if live detection itself
+        # can't find anything right now.
+        live_version = get_installed_version(name)
+        if live_version:
+            ver = live_version
+        elif installed:
+            ver = f"{installed['version']} (cached, not re-verified)"
+        else:
+            ver = "not installed"
         path = installed["path"] if installed else ""
         print(f"{name:<10} {entry['min_version']:<18} {ver:<15} {path}")
 
@@ -46,8 +57,12 @@ def cmd_status(args):
 
 
 def cmd_install(args):
-    print(f"Installing {args.tool} (dry_run={args.dry_run})...")
-    success = install_tool(args.tool, dry_run=args.dry_run)
+    print(f"Installing {args.tool} (dry_run={args.dry_run}, version={args.version or 'latest'})...")
+    try:
+        success = install_tool(args.tool, version=args.version, dry_run=args.dry_run)
+    except Exception as e:
+        print(f"Install failed: {e}")
+        return 1
     print("Done." if success else "Install failed -- see log for details.")
     return 0 if success else 1
 
@@ -109,6 +124,43 @@ def cmd_log(_args):
     return 0
 
 
+def cmd_report(_args):
+    """Combined view: for every known tool, show installed version,
+    whether it meets the minimum, dependency status, and update
+    availability -- in one pass instead of running four commands."""
+    registry = config.load_registry()
+    any_issue = False
+    for name in registry:
+        print(f"\n=== {name} ===")
+        ok, version = check_version_ok(name)
+        if version is None:
+            print("  Installed: NOT INSTALLED")
+            any_issue = True
+            continue
+        print(f"  Installed: {version} ({'OK' if ok else 'BELOW MINIMUM'})")
+        if not ok:
+            any_issue = True
+
+        dep_report = check_dependencies(name)
+        if dep_report.missing_dependencies:
+            print(f"  Dependencies: MISSING {dep_report.missing_dependencies}")
+            any_issue = True
+        else:
+            print(f"  Dependencies: OK")
+
+        available, _, candidate = check_for_update(name)
+        if available:
+            print(f"  Update: available -> {candidate}")
+            any_issue = True
+        elif candidate is None:
+            print(f"  Update: unknown (manager doesn't support checking)")
+        else:
+            print(f"  Update: up to date")
+
+    print()
+    return 1 if any_issue else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="esim-tool-manager", description="eSim Automated Tool Manager")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -122,6 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("install", help="Install a tool")
     p.add_argument("tool")
     p.add_argument("--dry-run", action="store_true", help="Print commands without executing")
+    p.add_argument("--version", default=None, help="Pin to a specific version instead of latest")
     p.set_defaults(func=cmd_install)
 
     p = sub.add_parser("check-deps", help="Check OS-level dependencies for a tool")
@@ -143,6 +196,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_configure)
 
     sub.add_parser("log", help="Print the action log").set_defaults(func=cmd_log)
+
+    sub.add_parser("report", help="Combined view: version + deps + update status for every tool").set_defaults(func=cmd_report)
 
     return parser
 
