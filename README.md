@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # eSim Automated Tool Manager — Prototype
 
 Automates installation, dependency checking, updates, and PATH/config
@@ -90,3 +91,6 @@ No code changes needed for a new tool that fits the existing pattern.
   not silently skipped).
 - CLI only — no GUI in this prototype (see DESIGN.md for the proposed
   PyQt follow-up, matching eSim's own UI stack).
+=======
+# esim-tool-manager
+>>>>>>> 5b9ddde6093032477e43ab9741f525d586950031
