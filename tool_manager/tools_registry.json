@@ -1,0 +1,84 @@
+{
+  "ngspice": {
+    "description": "Mixed-level/mixed-signal circuit simulator used by eSim for SPICE simulation.",
+    "min_version": "35",
+    "version_command": ["ngspice", "-v"],
+    "version_regex": "ngspice[- ]+([0-9]+)",
+    "check_binary": "ngspice",
+    "check_binary_windows": "ngspice_con",
+    "version_command_windows": ["ngspice_con", "-v"],
+    "install": {
+      "linux": {
+        "manager": "apt",
+        "package": "ngspice"
+      },
+      "windows": {
+        "manager": "choco",
+        "package": "ngspice"
+      },
+      "darwin": {
+        "manager": "brew",
+        "package": "ngspice"
+      }
+    },
+    "dependencies_linux": ["libx11-6", "libxaw7"]
+  },
+  "kicad": {
+    "description": "PCB design and schematic capture suite integrated with eSim.",
+    "min_version": "6",
+    "version_command": ["kicad-cli", "version"],
+    "version_regex": "([0-9]+\\.[0-9]+)",
+    "check_binary": "kicad",
+    "install": {
+      "linux": {
+        "manager": "apt",
+        "package": "kicad"
+      },
+      "windows": {
+        "manager": "choco",
+        "package": "kicad"
+      },
+      "darwin": {
+        "manager": "brew",
+        "package": "kicad"
+      }
+    },
+    "dependencies_linux": ["python3-wxgtk4.0"]
+  },
+  "ngveri": {
+    "description": "Verilog-A / Ngspice interface component used by eSim for behavioural modelling.",
+    "min_version": "1.0",
+    "version_command": ["ngveri", "--version"],
+    "version_regex": "([0-9]+\\.[0-9]+)",
+    "check_binary": "ngveri",
+    "install": {
+      "linux": {
+        "manager": "apt",
+        "package": "ngveri"
+      }
+    },
+    "dependencies_linux": []
+  },
+  "gnuplot": {
+    "description": "Plotting utility used by eSim/Ngspice to render simulation waveforms.",
+    "min_version": "5.0",
+    "version_command": ["gnuplot", "--version"],
+    "version_regex": "gnuplot\\s+([0-9]+\\.[0-9]+)",
+    "check_binary": "gnuplot",
+    "install": {
+      "linux": {
+        "manager": "apt",
+        "package": "gnuplot"
+      },
+      "windows": {
+        "manager": "choco",
+        "package": "gnuplot"
+      },
+      "darwin": {
+        "manager": "brew",
+        "package": "gnuplot"
+      }
+    },
+    "dependencies_linux": []
+  }
+}

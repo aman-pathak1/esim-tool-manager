@@ -1,0 +1,10 @@
+# No third-party Python packages are required.
+#
+# This prototype deliberately uses only the Python standard library
+# (argparse, json, subprocess, shutil, re, pathlib, logging) so there is
+# nothing to install before running it. Python 3.8+ is the only
+# requirement.
+#
+# If this project grows a GUI front-end (see DESIGN.md "Next steps"),
+# that would add a dependency such as:
+#   PyQt5>=5.15   # matches eSim's own UI stack
