@@ -8,7 +8,7 @@
 | `python3 -m tool_manager.cli status <tool>` | Installed version vs. required minimum |
 | `python3 -m tool_manager.cli install <tool> [--dry-run]` | Install via apt/choco/brew |
 | `python3 -m tool_manager.cli check-deps <tool>` | Check OS-level dependencies |
-| `python3 -m tool_manager.cli check-update <tool>` | Is a newer version available? (apt only) |
+| `python3 -m tool_manager.cli check-update <tool>` | Is a newer version available? |
 | `python3 -m tool_manager.cli update <tool> [--dry-run]` | Upgrade an installed tool |
 | `python3 -m tool_manager.cli configure <tool> [--dry-run]` | Ensure tool's dir is on PATH |
 | `python3 -m tool_manager.cli log` | Print the full action log |
