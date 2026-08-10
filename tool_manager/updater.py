@@ -15,6 +15,7 @@ to demonstrate.
 import re
 import shutil
 import subprocess
+import json
 from typing import Optional, Tuple
 
 from .config import get_current_platform, load_registry
@@ -34,11 +35,50 @@ def _apt_candidate_version(package: str) -> Optional[str]:
     return match.group(1) if match and match.group(1) != "(none)" else None
 
 
+def _choco_candidate_version(package: str) -> Optional[str]:
+    if shutil.which("choco") is None:
+        return None
+    result = subprocess.run(
+        ["choco", "outdated", "--limit-output", "--exact", package],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    for line in result.stdout.splitlines():
+        parts = line.split("|")
+        if len(parts) >= 3 and parts[0].strip().lower() == package.lower():
+            return parts[2].strip()
+    return None
+
+
+def _brew_candidate_version(package: str) -> Optional[str]:
+    if shutil.which("brew") is None:
+        return None
+    result = subprocess.run(
+        ["brew", "outdated", "--json=v2", package],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    try:
+        payload = json.loads(result.stdout or "{}")
+    except json.JSONDecodeError:
+        return None
+
+    for formula in payload.get("formulae", []):
+        if formula.get("name", "").lower() == package.lower():
+            return formula.get("current_version")
+    return None
+
+
+def _normalized(v: str) -> str:
+    return v.split("-")[0].split("+")[0].strip()
+
+
 def check_for_update(tool_name: str) -> Tuple[bool, Optional[str], Optional[str]]:
     """
     Returns (update_available, installed_version, candidate_version).
-    Only apt is implemented for the prototype; other managers log a
-    'not implemented' note rather than pretending to check.
+    Uses package-manager metadata (apt/choco/brew) where available.
     """
     registry = load_registry()
     entry = registry[tool_name]
@@ -52,14 +92,20 @@ def check_for_update(tool_name: str) -> Tuple[bool, Optional[str], Optional[str]
     manager = install_info["manager"]
     if manager == "apt":
         candidate = _apt_candidate_version(install_info["package"])
+    elif manager == "choco":
+        candidate = _choco_candidate_version(install_info["package"])
+    elif manager == "brew":
+        candidate = _brew_candidate_version(install_info["package"])
     else:
-        logger.info(f"[{tool_name}] Update check for manager '{manager}' not implemented in prototype.")
+        logger.info(f"[{tool_name}] Update check for manager '{manager}' not implemented.")
         return False, installed, None
 
     if candidate is None:
         return False, installed, None
 
-    update_available = candidate.split("-")[0].split("+")[0] != installed and candidate not in installed
+    installed_norm = _normalized(installed)
+    candidate_norm = _normalized(candidate)
+    update_available = candidate_norm != installed_norm and candidate_norm not in installed_norm
     return update_available, installed, candidate
 
 

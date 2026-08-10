@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # eSim Automated Tool Manager — Prototype
 
 Automates installation, dependency checking, updates, and PATH/config
@@ -39,7 +38,7 @@ python3 -m tool_manager.cli install ngspice
 # Check OS-level dependencies for a tool
 python3 -m tool_manager.cli check-deps kicad
 
-# Check whether a newer version is available (apt only in this prototype)
+# Check whether a newer version is available
 python3 -m tool_manager.cli check-update ngspice
 
 # Upgrade a tool
@@ -85,12 +84,9 @@ No code changes needed for a new tool that fits the existing pattern.
 
 - Relies on the OS package manager rather than direct binary downloads —
   won't work on a machine without apt/choco/brew.
-- Update-checking is only implemented for apt; choco/brew report
-  "not implemented" rather than a fake result.
+- Update-checking relies on package-manager metadata and may not detect
+  updates when package-manager indexes are stale or unavailable offline.
 - Non-Linux dependency verification is not implemented (logged as a note,
   not silently skipped).
 - CLI only — no GUI in this prototype (see DESIGN.md for the proposed
   PyQt follow-up, matching eSim's own UI stack).
-=======
-# esim-tool-manager
->>>>>>> 5b9ddde6093032477e43ab9741f525d586950031

@@ -112,12 +112,10 @@ should require opt-in, not be a default.
 
 ### 3.4 `updater.py` — update/upgrade system
 `check_for_update()` queries the package manager's own index
-(`apt-cache policy` on Linux) for the candidate version and compares it
+(`apt-cache policy` on Linux, `choco outdated` on Windows, `brew
+outdated --json=v2` on macOS) for the candidate version and compares it
 to the installed version. `update_tool()` runs the manager's upgrade
-command. Only apt is actually implemented for update-checking in this
-prototype; choco/brew update-checking is stubbed with an explicit log
-message rather than a fake success, because a tool manager should never
-imply it verified something it didn't.
+command.
 
 ### 3.5 `dependency_checker.py` — dependency checker
 Two checks: (1) is the tool's own binary discoverable on PATH, (2) are
@@ -158,7 +156,7 @@ that would call the exact same module functions.
 | Requirement | Status |
 |---|---|
 | Tool Installation Management | Implemented (apt/choco/brew dispatch, version detection) |
-| Update and Upgrade System | Implemented for apt; choco/brew stubbed honestly |
+| Update and Upgrade System | Implemented for apt/choco/brew package-manager flows |
 | Configuration Handling | Implemented (user config persistence + PATH management) |
 | Dependency Checker | Implemented (binary + OS package checks, structured report) |
 | User Interface | Implemented (CLI: list/status/install/update/check-deps/configure/log) |
