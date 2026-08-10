@@ -32,20 +32,26 @@ def _resolve_field(entry: dict, field: str) -> Optional[str]:
     """Some tools ship a GUI-only binary on Windows that opens a window
     instead of printing to stdout (e.g. ngspice.exe). Registry entries
     can supply a '<field>_windows' override for those cases."""
-    from .config import get_current_platform
-    if get_current_platform() == "windows" and f"{field}_windows" in entry:
-        return entry[f"{field}_windows"]
+    plat = get_current_platform()
+    override_key = f"{field}_{plat}"
+    if override_key in entry:
+        return entry[override_key]
     return entry.get(field)
+
+
+def _resolve_version_command(entry: dict) -> list:
+    return _resolve_field(entry, "version_command")
+
+
+def _leading_number(v: str) -> float:
+    m = re.match(r"(\d+(\.\d+)?)", v)
+    return float(m.group(1)) if m else 0.0
 
 
 def get_installed_version(tool_name: str) -> Optional[str]:
     registry = load_registry()
     entry = registry[tool_name]
-    from .config import get_current_platform
-    if get_current_platform() == "windows" and "version_command_windows" in entry:
-        cmd = entry["version_command_windows"]
-    else:
-        cmd = entry["version_command"]
+    cmd = _resolve_version_command(entry)
 
     if shutil.which(cmd[0]) is None:
         return None
@@ -84,7 +90,12 @@ def _run(cmd: list, dry_run: bool) -> Tuple[int, str]:
     return result.returncode, result.stdout
 
 
-def install_tool(tool_name: str, dry_run: bool = False, assume_yes: bool = True) -> bool:
+def install_tool(
+    tool_name: str,
+    version: Optional[str] = None,
+    dry_run: bool = False,
+    assume_yes: bool = True,
+) -> bool:
     """
     Installs `tool_name` using the platform-appropriate package manager.
     Returns True on (apparent) success.
@@ -110,15 +121,24 @@ def install_tool(tool_name: str, dry_run: bool = False, assume_yes: bool = True)
     if manager == "apt":
         if not _manager_available("apt-get") and not dry_run:
             raise InstallError("apt-get not available on this system.")
+        package_spec = f"{package}={version}" if version else package
         cmd = _apt_prefix() + ["apt-get", "install"]
         if assume_yes:
             cmd.append("-y")
-        cmd.append(package)
+        cmd.append(package_spec)
     elif manager == "choco":
+        if not _manager_available("choco") and not dry_run:
+            raise InstallError("choco not available on this system.")
         cmd = ["choco", "install", package]
         if assume_yes:
             cmd.append("-y")
+        if version:
+            cmd.append(f"--version={version}")
     elif manager == "brew":
+        if not _manager_available("brew") and not dry_run:
+            raise InstallError("brew not available on this system.")
+        if version:
+            raise InstallError("brew does not reliably support pinning versions via this prototype.")
         cmd = ["brew", "install", package]
     else:
         raise InstallError(f"Unsupported package manager '{manager}'.")
@@ -156,9 +176,5 @@ def check_version_ok(tool_name: str) -> Tuple[bool, Optional[str]]:
     if installed is None:
         return False, None
 
-    def leading_number(v: str) -> float:
-        m = re.match(r"(\d+(\.\d+)?)", v)
-        return float(m.group(1)) if m else 0.0
-
-    is_ok = leading_number(installed) >= leading_number(entry["min_version"])
+    is_ok = _leading_number(installed) >= _leading_number(entry["min_version"])
     return is_ok, installed
